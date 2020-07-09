@@ -29,13 +29,12 @@ defmodule VisitJson.Redix do
 
   defp get_links_by_key(key) do
     {:ok, result} = Redix.command(:redix, ["LRANGE", "domains:" <> Integer.to_string(key), "0", "-1"])
-    #    IO.inspect ["LRANGE", key, "0", "-1"]
+#    IO.inspect ["LRANGE", key, "0", "-1", " result: ", result]
     result
   end
 
   def insert_domains_by_time(domains, time) do
     Redix.command(:redix, ["RPUSH", "domains:" <> Integer.to_string(time)] ++ domains)
-    # TODO: Should make :debug variable for output?
     #    IO.inspect ["RPUSH", time, domains]
   end
 end

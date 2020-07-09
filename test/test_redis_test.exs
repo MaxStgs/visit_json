@@ -12,49 +12,77 @@ defmodule VisitJsonRedisTest do
     assert length(links) == 0
   end
 
-  @tag redis_test: true
-  test "Insert" do
-    VisitJson.TestHelpers.clear_redis_links()
-    time = :os.system_time(:second)
+  @tag inserts: true
+  test "Inserts" do
+    tests = [
+      %{input: ["ya.ru", "google.ru"], from: 0, to: :current_time, length: 2},
+      %{input: ["ya.ru", "ya.ru", "google.ru"], from: 0, to: :current_time, length: 2},
+    ]
 
-    VisitJson.Redix.insert_domains_by_time(["ya.ru", "google.ru"], time)
-    {:ok, links} = VisitJson.Redix.get_links(0, time)
+    Enum.each(
+      tests,
+      fn elem ->
+        VisitJson.TestHelpers.clear_redis_links()
+        time = if elem.to == :current_time do
+          :os.system_time(:second)
+        else
+          elem.to
+        end
 
-    assert length(links) == 2
+        VisitJson.Redix.insert_domains_by_time(elem.input, time)
+        {:ok, links} = VisitJson.Redix.get_links(elem.from, time)
+
+        assert length(links) == elem.length
+      end
+    )
   end
 
-  @tag redis_test: true
-  test "Insert with unique" do
-    VisitJson.TestHelpers.clear_redis_links()
-    time = :os.system_time(:second)
+  test "Complex insert" do
+    tests = [
+      %{
+        inputs: [
+          %{data: ["ya.ru", "google.ru"], insert_time: 50},
+          %{data: ["funbox.ru"], insert_time: 75},
+          %{data: ["ya.ru"], insert_time: 100}
+        ],
+        from: 55,
+        to: 105,
+        waiting: 2
+      },
+      %{
+        inputs: [
+          %{data: ["ya.ru", "google.ru"], insert_time: 50},
+          %{data: ["funbox.ru"], insert_time: 75},
+          %{data: ["ya.ru"], insert_time: 100}
+        ],
+        from: 0,
+        to: 110,
+        waiting: 3
+      }
+    ]
 
-    VisitJson.Redix.insert_domains_by_time(["ya.ru", "ya.ru", "google.ru"], time)
-    {:ok, links} = VisitJson.Redix.get_links(0, time)
+    Enum.each(
+      tests,
+      fn elem ->
+        VisitJson.TestHelpers.clear_redis_links()
 
-    assert length(links) == 2
-  end
+        Enum.each(
+          elem.inputs,
+          fn elem ->
+            VisitJson.Redix.insert_domains_by_time(elem.data, elem.insert_time)
+          end
+        )
 
-  @tag redis_test: true
-  test "hard insert 1" do
-    VisitJson.TestHelpers.clear_redis_links()
+        time = if elem.to == :current_time do
+          :os.system_time(:second)
+        else
+          elem.to
+        end
 
-    VisitJson.Redix.insert_domains_by_time(["ya.ru", "google.ru"], 50)
-    VisitJson.Redix.insert_domains_by_time(["funbox.ru"], 75)
-    VisitJson.Redix.insert_domains_by_time(["ya.ru"], 100)
-    {:ok, links} = VisitJson.Redix.get_links(55, 105)
+        {:ok, links} = VisitJson.Redix.get_links(elem.from, time)
 
-    assert length(links) == 2
-  end
-
-  @tag redis_test: true
-  test "hard insert 2" do
-    VisitJson.TestHelpers.clear_redis_links()
-
-    VisitJson.Redix.insert_domains_by_time(["ya.ru", "google.ru"], 50)
-    VisitJson.Redix.insert_domains_by_time(["funbox.ru"], 75)
-    VisitJson.Redix.insert_domains_by_time(["ya.ru"], 100)
-    {:ok, links} = VisitJson.Redix.get_links(0, 110)
-
-    assert length(links) == 3
+        assert length(links) == elem.waiting
+      end
+    )
   end
 end

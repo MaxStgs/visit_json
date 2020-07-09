@@ -20,7 +20,6 @@ defmodule VisitJson.Endpoint do
   get "/visited_domains" do
     params = conn.query_params
 
-    # TODO: solve it better
     # convert params(from, to) from string to integers or nil
     {from, _} = cond do
       params["from"] != nil && Integer.parse(params["from"]) ->
@@ -45,7 +44,6 @@ defmodule VisitJson.Endpoint do
     send_resp(conn, status, body)
   end
 
-  # TODO: maybe I should move that to somewhere?
   defp resp_missing_from_to do
     Poison.encode!(%{"status" => "Missed or Incorret 'from' and/or 'to' params"})
   end

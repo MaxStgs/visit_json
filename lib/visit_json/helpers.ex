@@ -2,18 +2,16 @@ defmodule VisitJson.Helpers do
   @moduledoc false
 
   def get_domains_from_links(links) do
-    Enum.reduce(links, [], fn link, acc -> acc ++ [get_domain_from_link(link)] end)
+    Enum.map(links, fn link -> get_domain_from_link(link) end)
   end
 
   def get_domain_from_link(link) do
     authority = URI.parse(link).authority
 
-    authority = cond do
-      authority == nil ->
-        # TODO: Dirty trick, other solution?
-        URI.parse("//" <> link).authority
-
-      true -> authority
+    authority = if authority == nil do
+      URI.parse("//" <> link).authority
+    else
+      authority
     end
 
     authority

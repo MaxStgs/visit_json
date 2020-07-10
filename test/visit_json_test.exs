@@ -117,23 +117,50 @@ defmodule VisitJsonTest do
 
   @tag main_test: true
   test "Main tests" do
-    VisitJson.TestHelpers.clear_redis_links()
+    tests = [
+      %{
+        input: %{
+          "links" => ["https://ya.ru", "https://ya.ru?q=123", "https://second.life"]
+        },
+        length: 2
+      },
+      %{
+        input: %{
+          "links" => ["https://ya.ru", "https://ya22.ru?q=123", "https://second.life"]
+        },
+        length: 3
+      }
+    ]
 
-    # Send info
-    input = %{"links" => ["https://ya.ru", "https://ya.ru?q=123"]}
+    IO.inspect tests
 
-    conn = conn(:post, "/visited_links", input)
-    conn = VisitJson.Endpoint.call(conn, init_empty())
+    Enum.each(
+      tests,
+      fn test ->
+        VisitJson.TestHelpers.clear_redis_links()
 
-    assert conn.state == :sent
-    assert conn.status == 200
+        # Send info
+        conn = conn(:post, "/visited_links", test.input)
+        conn = VisitJson.Endpoint.call(conn, init_empty())
 
-    # Receive info
-    conn = conn(:get, "/visited_domains")
-           |> put_req_header("content-type", "application/json")
-    conn = VisitJson.Endpoint.call(conn, init_empty())
+        assert conn.state == :sent
+        assert conn.status == 200
 
-    assert conn.state == :sent
-    assert conn.status == 200
+        # Receive info
+        time = :os.system_time(:second)
+        path = "/visited_domains?from=" <> Integer.to_string(time - 5) <> "&to=" <> Integer.to_string(time + 5)
+        IO.puts path
+        conn = conn(:get, path)
+               |> put_req_header("content-type", "application/json")
+        conn = VisitJson.Endpoint.call(conn, init_empty())
+
+        assert conn.state == :sent
+        assert conn.status == 200
+
+        {:ok, response} = Poison.decode(conn.resp_body)
+        assert response["status"] == "ok"
+        assert length(response["domains"]) == test.length
+      end
+    )
   end
 end

@@ -87,7 +87,7 @@ defmodule VisitJsonTest do
   end
 
   @tag link_corectness: true
-  test "Link corectness" do
+  test "Link correctness" do
     tests = [
       ["http://ya.ru", "ya.ru",],
       ["http://ya.ru?q=123", "ya.ru",],
@@ -148,7 +148,11 @@ defmodule VisitJsonTest do
 
         # Receive info
         time = :os.system_time(:second)
-        path = "/visited_domains?from=" <> Integer.to_string(time - 5) <> "&to=" <> Integer.to_string(time + 5)
+        path = "/visited_domains?from=" <>
+               Integer.to_string(time - 5) <>
+               "&to=" <>
+               Integer.to_string(time + 5)
+
         IO.puts path
         conn = conn(:get, path)
                |> put_req_header("content-type", "application/json")

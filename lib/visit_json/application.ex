@@ -9,14 +9,16 @@ defmodule VisitJson.Application do
     # *mark* Is it fine code? I used port twice
     port = Application.fetch_env!(:visit_json, :port)
     redis_port = Application.fetch_env!(:visit_json, :redis_port)
-    
+
     children = [
       # Starts a worker by calling: VisitJson.Worker.start_link(arg)
       # {VisitJson.Worker, arg}
       Plug.Cowboy.child_spec(
         scheme: :http,
         plug: VisitJson.Endpoint,
-        options: [port: port]
+        options: [
+          port: port
+        ]
       ),
       {Redix, name: :redix, port: redis_port}
     ]
